@@ -91,6 +91,9 @@ module.exports = function(server, server_start_time) {
 		if (req.user.role != 'admin') {
         	return res.send(400, {error: 'You don\'t have sufficient priviledges.'})
     	}
+    	if (req.query.t1 > req.query.t2) {
+    		return res.send(400, {error: 'Timestamp Range is invalid.'})
+    	}
 		var 	time1 		= new Date(req.query.t1 * 1000);
 		var 	time2 		= new Date(req.query.t2 * 1000);
 		const	Hostname	= req.connection.localAddress.split(":").pop();
@@ -101,9 +104,9 @@ module.exports = function(server, server_start_time) {
         		$lt:  new Date(time2)
     		}
 		}, function(err, doc) {
-			let data 	  = {name: "get-logs", response: "200"};
+			let data 	  = {name: "getLogs", response: "200"};
 			if (err) {
-				let data  = {name: "get-logs", response: "500"};
+				let data  = {name: "getLogs", response: "500"};
 			}
 			setLogs(Hostname, Port, Path, data, function(response, status){
 				if (status == 201) {
@@ -116,7 +119,7 @@ module.exports = function(server, server_start_time) {
 	});
 
 
-	server.get('/geocode', function (req, res, next) {
+	server.get('/geoCode', function (req, res, next) {
   		var 	latitude 	= req.query.lat;
   		var 	longitude	= req.query.long;
 		const	Hostname	= req.connection.localAddress.split(":").pop();
@@ -128,7 +131,7 @@ module.exports = function(server, server_start_time) {
 		else {
 			geocoder.reverse({lat:latitude, lon:longitude})
 			.then(function(resp) {
-				let data = {name: "geocode", response: "201"};
+				let data = {name: "geoCode", response: "201"};
 				setLogs(Hostname, Port, Path, data, function(response, status){
 					if (status == 201) {
 						res.send(status, {response: resp});
@@ -138,7 +141,7 @@ module.exports = function(server, server_start_time) {
 				});
 			})
 			.catch(function(err) {
-				let data = {name: "geocode", response: "500"};
+				let data = {name: "geoCode", response: "500"};
 				setLogs(Hostname, Port, Path, data, function(response, status){
 					res.send(500, {error: error});
 				});

@@ -1,24 +1,22 @@
 const 	errors 			= require('restify-errors');
 const 	config 			= require('../config');
 const 	Logs 			= require('../models/Logs');
-const	Path			= '/set-logs';
+const	Path			= '/setLogs';
 const 	request			= require('request-promise');
-
-var 	options = {
-	provider: 'google',
-	httpAdapter: 'https',
-	apiKey: 'AIzaSyBRVAaTAP_5lLT0ZuAc7aF1tV_Ag_vNLOg',
-	formatter: null
-};
-var geocoder = require('node-geocoder')(options);
-// var rateLimitPerInterval = 1;
-// var rateLimitInterval = 1000000;
-// var cacheExpiry = 86400000;
-// var geocacher = require('node-geocacher')(geocoder, geocacher_db, cacheExpiry,
-// 				rateLimitInterval, rateLimitPerInterval);
-// var geocacher_db = config.db.geocache;
+var 	options  		= config.geocode_options;
+var 	geocoder 		= require('node-geocoder')(options);
+const   check 			= require('req-check');
 
 module.exports = function(server, server_start_time) {
+
+	var max_request_per_hour = 10;
+	var current_no_of_req    = 0;
+
+	function resetMaxRequestPerHour () {
+		current_no_of_req = 0;
+		console.log("Number of current Requests reset to default.");
+	}
+	setTimeout(resetMaxRequestPerHour, 3600000);
 
 	function setLogs(Hostname, Port, Path, data, callback) {
 		const   options 	= {
@@ -39,7 +37,9 @@ module.exports = function(server, server_start_time) {
     	});
 	}
 
-	server.post('/set-logs', function (req, res, next) {
+	server.post('/setLogs', function (req, res, next) {
+		req.checkBody('name').exists();
+  		req.checkBody('response').exists();
 		let Log = new Logs(req.body);
 		Log.save(function(err) {
 			if (err) {
@@ -49,7 +49,33 @@ module.exports = function(server, server_start_time) {
 		});
 	});
 
+	server.post('/getToken', function (req, res, next) {
+		const	Hostname	= req.connection.localAddress.split(":").pop();
+		const	Port		= req.connection.localPort;
+		let 	data 	= {name: "getToken", response: "201"};
+		if (!req.body.role) {
+			let 	data = {name: "getToken", response: "400"};
+        	resp = new errors.BadRequestError('Incomplete registration information.')
+    	} else {
+	        const 	jwt 	= require('jsonwebtoken')
+	        const 	token 	= jwt.sign(req.body, config.Jwt_Secret)
+	        var		resp 	= req.body
+	        resp['token']   = token
+    	}
+    	setLogs(Hostname, Port, Path, data, function(response, status){
+			if (status == 201) {
+				res.send(status, {uptime: uptime});
+			} else {
+				res.send(status, {error: response});
+			}
+		});
+    	res.send(201, {response:resp});
+	});
+
 	server.get('/uptime', function (req, res, next) {
+		if (req.user.role != 'admin') {
+        	return res.send(400, {error: 'You don\'t have sufficient priviledges.'})
+    	}
 		var 	uptime 		= Math.abs(new Date().getTime() - server_start_time);
 		let 	data 		= {name: "uptime", response: "201"};
 		const	Hostname	= req.connection.localAddress.split(":").pop();
@@ -64,8 +90,10 @@ module.exports = function(server, server_start_time) {
 	});
 
 
-
-	server.get('/get-logs', function (req, res, next) {
+	server.get('/getLogs', function (req, res, next) {
+		if (req.user.role != 'admin') {
+        	return res.send(400, {error: 'You don\'t have sufficient priviledges.'})
+    	}
 		var 	time1 		= new Date(req.query.t1 * 1000);
 		var 	time2 		= new Date(req.query.t2 * 1000);
 		const	Hostname	= req.connection.localAddress.split(":").pop();
@@ -96,22 +124,47 @@ module.exports = function(server, server_start_time) {
   		var 	longitude	= req.query.long;
 		const	Hostname	= req.connection.localAddress.split(":").pop();
 		const	Port		= req.connection.localPort;
-		geocoder.reverse({lat:latitude, lon:longitude})
-		.then(function(resp) {
-			let data = {name: "geocode", response: "201"};
-			setLogs(Hostname, Port, Path, data, function(response, status){
-				if (status == 201) {
-					res.send(status, {response: resp});
-				} else {
-					res.send(status, {error: response});
-				}
+		current_no_of_req += 1;
+		if (current_no_of_req > max_request_per_hour) {
+			res.send(500, {error: "Sorry the limit for this API exceeded."});
+		}
+		else {
+			geocoder.reverse({lat:latitude, lon:longitude})
+			.then(function(resp) {
+				let data = {name: "geocode", response: "201"};
+				setLogs(Hostname, Port, Path, data, function(response, status){
+					if (status == 201) {
+						res.send(status, {response: resp});
+					} else {
+						res.send(status, {error: response});
+					}
+				});
+			})
+			.catch(function(err) {
+				let data = {name: "geocode", response: "500"};
+				setLogs(Hostname, Port, Path, data, function(response, status){
+					res.send(500, {error: error});
+				});
 			});
-		})
-		.catch(function(err) {
-			let data = {name: "geocode", response: "500"};
-			setLogs(Hostname, Port, Path, data, function(response, status){
-				res.send(500, {error: error});
-			});
+		}
+	});
+
+	server.post('/setGeocodeApiLimit', function(req, res, next) {
+		if (req.user.role != 'admin') {
+        	return res.send(400, {error: 'You don\'t have sufficient priviledges.'})
+    	}
+    	req.checkBody('reqLimit').exists();
+		var 	newLimit 	= req.body.reqLimit;
+		const	Hostname	= req.connection.localAddress.split(":").pop();
+		const	Port		= req.connection.localPort;
+		max_request_per_hour = newLimit;
+		let data = {name: "setGeoCodeApiLimit", response: "201"};
+		setLogs(Hostname, Port, Path, data, function(response, status){
+			if (status == 201) {
+				res.send(status, {response: response});
+			} else {
+				res.send(status, {error: response});
+			}
 		});
 	});
 }

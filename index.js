@@ -2,10 +2,17 @@ const config = require('./config');
 const restify = require('restify');
 const mongoose = require('mongoose');
 const restifyPlugins = require('restify-plugins');
-
+var   jwt = require('restify-jwt-community');
 const server = restify.createServer({
 	name: config.name
 });
+
+// Auth
+var jwtConfig = {
+    secret: config.Jwt_Secret
+}
+
+server.use(jwt(jwtConfig).unless({path: ['/getToken', '/setLogs']}));
 
 var server_start_time = new Date().getTime();
 
@@ -13,7 +20,6 @@ server.use(restifyPlugins.jsonBodyParser({ mapParams: true }));
 server.use(restifyPlugins.acceptParser(server.acceptable));
 server.use(restifyPlugins.queryParser({ mapParams: true }));
 server.use(restifyPlugins.fullResponse());
-
 server.listen(config.port, function (err) {
 
 	// establish connection to mongodb

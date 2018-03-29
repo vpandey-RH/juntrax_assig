@@ -5,7 +5,6 @@ const	Path			= '/setLogs';
 const 	request			= require('request-promise');
 var 	options  		= config.geocode_options;
 var 	geocoder 		= require('node-geocoder')(options);
-const   check 			= require('req-check');
 
 module.exports = function(server, server_start_time) {
 
@@ -38,8 +37,6 @@ module.exports = function(server, server_start_time) {
 	}
 
 	server.post('/setLogs', function (req, res, next) {
-		req.checkBody('name').exists();
-  		req.checkBody('response').exists();
 		let Log = new Logs(req.body);
 		Log.save(function(err) {
 			if (err) {
@@ -57,10 +54,10 @@ module.exports = function(server, server_start_time) {
 			let 	data = {name: "getToken", response: "400"};
         	resp = new errors.BadRequestError('Incomplete registration information.')
     	} else {
-	        const 	jwt 	= require('jsonwebtoken')
-	        const 	token 	= jwt.sign(req.body, config.Jwt_Secret)
-	        var		resp 	= req.body
-	        resp['token']   = token
+	        const 	jwt 	= require('jsonwebtoken');
+	        const 	token 	= jwt.sign(req.body, config.Jwt_Secret);
+	        var		resp 	= req.body;
+	        resp['token']   = token;
     	}
     	setLogs(Hostname, Port, Path, data, function(response, status){
 			if (status == 201) {
@@ -153,7 +150,6 @@ module.exports = function(server, server_start_time) {
 		if (req.user.role != 'admin') {
         	return res.send(400, {error: 'You don\'t have sufficient priviledges.'})
     	}
-    	req.checkBody('reqLimit').exists();
 		var 	newLimit 	= req.body.reqLimit;
 		const	Hostname	= req.connection.localAddress.split(":").pop();
 		const	Port		= req.connection.localPort;
@@ -161,7 +157,7 @@ module.exports = function(server, server_start_time) {
 		let data = {name: "setGeoCodeApiLimit", response: "201"};
 		setLogs(Hostname, Port, Path, data, function(response, status){
 			if (status == 201) {
-				res.send(status, {response: response});
+				res.send(status, {response: 'New Request Limit was set successfully.'});
 			} else {
 				res.send(status, {error: response});
 			}

@@ -1,0 +1,7 @@
+curl -XGET 'http://localhost:3000/geocode?lat=22.960510&long=88.567406'
+curl -XGET http://localhost:3000/uptime
+curl -XPOST http://localhost:3000/setGeocodeApiLimit -d '{"reqLimit" : 5}'
+curl -H "Content-Type: application/json" -XPOST http://localhost:3000/getToken -d '{"role" : "admin"}'
+curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1MjIzNDEzMzF9.TV5Lt49ahDMrDmgE5AGM4_6J6gHIdpq-8a4mAjGolm8" -XGET http://localhost:3000/uptime
+curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1MjIzNDQwNzV9.LI4dOWuL2_0UT4GDVnB5drX1T9lXAYhdUYd36GbV0ug" -H "Content-Type: application/json" -XPOST http://localhost:3000/setGeocodeApiLimit -d '{"reqLimit" : 5}'
+curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1MjIzNDEzMzF9.TV5Lt49ahDMrDmgE5AGM4_6J6gHIdpq-8a4mAjGolm8" -XGET 'http://localhost:3000/getLogs?t1=1522347849&t2=1522347984'

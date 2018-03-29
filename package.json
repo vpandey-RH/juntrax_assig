@@ -16,12 +16,14 @@
   },
   "homepage": "https://github.com/vpandey-RH/juntrax_assig",
   "dependencies": {
+    "jsonwebtoken": "^8.2.0",
     "mongoose": "^5.0.11",
     "mongoose-string-query": "^0.2.5",
     "node-geocoder": "^3.22.0",
     "request-promise": "^4.2.2",
     "restify": "^7.0.0",
     "restify-errors": "^6.0.0",
+    "restify-jwt": "^0.4.0",
     "restify-jwt-community": "^1.0.3",
     "restify-plugins": "^1.6.0"
   },

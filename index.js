@@ -12,7 +12,7 @@ var jwtConfig = {
     secret: config.Jwt_Secret
 }
 
-server.use(jwt(jwtConfig).unless({path: ['/getToken', '/setLogs']}));
+server.use(jwt(jwtConfig).unless({path: ['/getToken', '/setLogs', '/geocode']}));
 
 var server_start_time = new Date().getTime();
 
